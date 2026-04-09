@@ -56,18 +56,4 @@ public class Trip {
     public int remainingPlaces() {
         return maxParticipants - participants.size();
     }
-
-    // Getters & Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public int getMaxParticipants() { return maxParticipants; }
-    public void setMaxParticipants(int maxParticipants) { this.maxParticipants = maxParticipants; }
-    public boolean isPremiumOnly() { return premiumOnly; }
-    public void setPremiumOnly(boolean premiumOnly) { this.premiumOnly = premiumOnly; }
-    public boolean isStarted() { return started; }
-    public void setStarted(boolean started) { this.started = started; }
-    public List<User> getParticipants() { return participants; }
-    public void setParticipants(List<User> participants) { this.participants = participants; }
 }

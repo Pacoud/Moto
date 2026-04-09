@@ -11,7 +11,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -44,7 +46,7 @@ class TripServiceTest {
         void shouldCreateTrip_whenValidParameters() {
             // Arrange
             Trip savedTrip = new Trip("Balade Alpine", 5, false);
-            savedTrip.setId(1L);
+            ReflectionTestUtils.setField(savedTrip, "id", 1L);
             when(tripRepo.save(any(Trip.class))).thenReturn(savedTrip);
 
             // Act
@@ -52,11 +54,11 @@ class TripServiceTest {
 
             // Assert
             assertNotNull(result);
-            assertEquals(1L, result.getId());
-            assertEquals("Balade Alpine", result.getName());
-            assertEquals(5, result.getMaxParticipants());
-            assertFalse(result.isPremiumOnly());
-            assertFalse(result.isStarted());
+            assertEquals(1L, ReflectionTestUtils.getField(result, "id"));
+            assertEquals("Balade Alpine", ReflectionTestUtils.getField(result, "name"));
+            assertEquals(5, ReflectionTestUtils.getField(result, "maxParticipants"));
+            assertEquals(false, ReflectionTestUtils.getField(result, "premiumOnly"));
+            assertEquals(false, ReflectionTestUtils.getField(result, "started"));
             verify(tripRepo, times(1)).save(any(Trip.class));
         }
 
@@ -65,7 +67,7 @@ class TripServiceTest {
         void shouldCreatePremiumTrip() {
             // Arrange
             Trip savedTrip = new Trip("VIP Ride", 3, true);
-            savedTrip.setId(2L);
+            ReflectionTestUtils.setField(savedTrip, "id", 2L);
             when(tripRepo.save(any(Trip.class))).thenReturn(savedTrip);
 
             // Act
@@ -73,7 +75,7 @@ class TripServiceTest {
 
             // Assert
             assertNotNull(result);
-            assertTrue(result.isPremiumOnly());
+            assertEquals(true, ReflectionTestUtils.getField(result, "premiumOnly"));
             verify(tripRepo).save(any(Trip.class));
         }
 
@@ -117,10 +119,10 @@ class TripServiceTest {
         void shouldJoinTrip_whenAllConditionsMet() {
             // Arrange
             User user = new User("Lucas", false);
-            user.setId(1L);
+            ReflectionTestUtils.setField(user, "id", 1L);
 
             Trip trip = new Trip("Balade Côtière", 5, false);
-            trip.setId(1L);
+            ReflectionTestUtils.setField(trip, "id", 1L);
 
             when(tripRepo.findById(1L)).thenReturn(Optional.of(trip));
             when(userRepo.findById(1L)).thenReturn(Optional.of(user));
@@ -131,8 +133,13 @@ class TripServiceTest {
 
             // Assert
             assertNotNull(result);
-            assertEquals(1, result.getParticipants().size());
-            assertEquals(10, user.getPoints()); // L'utilisateur gagne 10 points
+            @SuppressWarnings("unchecked")
+            List<User> participants = (List<User>) ReflectionTestUtils.getField(result, "participants");
+            assertEquals(1, participants.size());
+
+            int points = (int) ReflectionTestUtils.getField(user, "points");
+            assertEquals(10, points); // L'utilisateur gagne 10 points
+
             verify(tripRepo).findById(1L);
             verify(userRepo).findById(1L);
             verify(tripRepo).save(trip);
@@ -143,10 +150,10 @@ class TripServiceTest {
         void shouldAllowPremiumUser_toJoinPremiumTrip() {
             // Arrange
             User premiumUser = new User("PremiumRider", true);
-            premiumUser.setId(1L);
+            ReflectionTestUtils.setField(premiumUser, "id", 1L);
 
             Trip premiumTrip = new Trip("VIP Ride", 3, true);
-            premiumTrip.setId(1L);
+            ReflectionTestUtils.setField(premiumTrip, "id", 1L);
 
             when(tripRepo.findById(1L)).thenReturn(Optional.of(premiumTrip));
             when(userRepo.findById(1L)).thenReturn(Optional.of(premiumUser));
@@ -157,8 +164,12 @@ class TripServiceTest {
 
             // Assert
             assertNotNull(result);
-            assertEquals(1, result.getParticipants().size());
-            assertTrue(premiumUser.isPremium());
+            @SuppressWarnings("unchecked")
+            List<User> participants = (List<User>) ReflectionTestUtils.getField(result, "participants");
+            assertEquals(1, participants.size());
+
+            boolean premium = (boolean) ReflectionTestUtils.getField(premiumUser, "premium");
+            assertTrue(premium);
         }
 
         @Test
@@ -184,7 +195,7 @@ class TripServiceTest {
         void shouldThrowException_whenUserNotFound() {
             // Arrange
             Trip trip = new Trip("Balade", 5, false);
-            trip.setId(1L);
+            ReflectionTestUtils.setField(trip, "id", 1L);
 
             when(tripRepo.findById(1L)).thenReturn(Optional.of(trip));
             when(userRepo.findById(99L)).thenReturn(Optional.empty());
@@ -206,14 +217,14 @@ class TripServiceTest {
         void shouldThrowException_whenTripIsFull() {
             // Arrange
             Trip trip = new Trip("Mini Ride", 1, false);
-            trip.setId(1L);
+            ReflectionTestUtils.setField(trip, "id", 1L);
 
             User existingUser = new User("Existing", false);
-            existingUser.setId(1L);
+            ReflectionTestUtils.setField(existingUser, "id", 1L);
             trip.join(existingUser); // Le trajet est maintenant complet (1/1)
 
             User newUser = new User("NewRider", false);
-            newUser.setId(2L);
+            ReflectionTestUtils.setField(newUser, "id", 2L);
 
             when(tripRepo.findById(1L)).thenReturn(Optional.of(trip));
             when(userRepo.findById(2L)).thenReturn(Optional.of(newUser));
@@ -233,10 +244,10 @@ class TripServiceTest {
         void shouldThrowException_whenNonPremiumJoinsPremiumTrip() {
             // Arrange
             Trip premiumTrip = new Trip("VIP Only", 5, true);
-            premiumTrip.setId(1L);
+            ReflectionTestUtils.setField(premiumTrip, "id", 1L);
 
             User nonPremiumUser = new User("BasicRider", false);
-            nonPremiumUser.setId(1L);
+            ReflectionTestUtils.setField(nonPremiumUser, "id", 1L);
 
             when(tripRepo.findById(1L)).thenReturn(Optional.of(premiumTrip));
             when(userRepo.findById(1L)).thenReturn(Optional.of(nonPremiumUser));
@@ -256,16 +267,16 @@ class TripServiceTest {
         void shouldThrowException_whenTripAlreadyStarted() {
             // Arrange
             Trip trip = new Trip("Started Ride", 5, false);
-            trip.setId(1L);
+            ReflectionTestUtils.setField(trip, "id", 1L);
 
             // Ajouter un participant puis démarrer le trajet
             User participant = new User("First", false);
-            participant.setId(10L);
+            ReflectionTestUtils.setField(participant, "id", 10L);
             trip.join(participant);
             trip.start();
 
             User lateUser = new User("LateRider", false);
-            lateUser.setId(2L);
+            ReflectionTestUtils.setField(lateUser, "id", 2L);
 
             when(tripRepo.findById(1L)).thenReturn(Optional.of(trip));
             when(userRepo.findById(2L)).thenReturn(Optional.of(lateUser));
@@ -294,10 +305,10 @@ class TripServiceTest {
         void shouldStartTrip_whenHasParticipants() {
             // Arrange
             Trip trip = new Trip("Ready Ride", 5, false);
-            trip.setId(1L);
+            ReflectionTestUtils.setField(trip, "id", 1L);
 
             User user = new User("Rider", false);
-            user.setId(1L);
+            ReflectionTestUtils.setField(user, "id", 1L);
             trip.join(user); // Ajouter un participant
 
             when(tripRepo.findById(1L)).thenReturn(Optional.of(trip));
@@ -308,7 +319,8 @@ class TripServiceTest {
 
             // Assert
             assertNotNull(result);
-            assertTrue(result.isStarted());
+            boolean started = (boolean) ReflectionTestUtils.getField(result, "started");
+            assertTrue(started);
             verify(tripRepo).findById(1L);
             verify(tripRepo).save(trip);
         }
@@ -318,7 +330,7 @@ class TripServiceTest {
         void shouldThrowException_whenNoParticipants() {
             // Arrange
             Trip emptyTrip = new Trip("Empty Ride", 5, false);
-            emptyTrip.setId(1L);
+            ReflectionTestUtils.setField(emptyTrip, "id", 1L);
 
             when(tripRepo.findById(1L)).thenReturn(Optional.of(emptyTrip));
 
