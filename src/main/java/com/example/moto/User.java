@@ -8,7 +8,8 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "app_user")
 public class User {
-    @Id @GeneratedValue
+    @Id
+    @GeneratedValue
     private Long id;
     private String name;
     private boolean premium;
